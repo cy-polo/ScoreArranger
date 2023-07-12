@@ -1621,6 +1621,7 @@ class Measure(MusicXMLComponent, MusicXMLContainer):
     :param barline: either None, which means there will be a regular barline, "double", "end", or any of the barline
         names used in the MusicXML standard.
     :param staves: for multi-part music, like piano music
+    :param part_symbol: link 2 parts using a brace
     :param number: which number in the score. Will be set automatically by the containing Part
     :param directions_with_displacements: this is a way of placing directions at arbitrary positions in the bar.
         It takes a list of tuples of (direction, position in the bar), where position in the bar is a floating point
@@ -1646,7 +1647,7 @@ class Measure(MusicXMLComponent, MusicXMLContainer):
     def __init__(self, contents: Union[Sequence[DurationalObject], Sequence[Sequence[DurationalObject]]] = None,
                  time_signature: Tuple = None, key: Union[KeySignature, str, int] = None,
                  clef: Union[Clef, str, Tuple] = None, barline: str = None,
-                 staves: str = None, number: int = 1,
+                 staves: str = None, part_symbol: list = None, number: int = 1,
                  directions_with_displacements: Sequence[Tuple['Direction', float]] = (),
                  transpose: Optional[Transpose] = None):
         super().__init__(contents=contents, allowed_types=(Note, Rest, Chord, BarRest, BeamedGroup,
@@ -1668,6 +1669,7 @@ class Measure(MusicXMLComponent, MusicXMLContainer):
                and barline.lower() in Measure._barline_xml_names, "Barline type not understood"
         self.barline = barline
         self.staves = staves
+        self.part_symbol = part_symbol
         self.transpose = transpose
 
         self.directions_with_displacements = directions_with_displacements
@@ -1827,6 +1829,9 @@ class Measure(MusicXMLComponent, MusicXMLContainer):
         if self.staves is not None:
             staves_el = ElementTree.SubElement(attributes_el, "staves")
             staves_el.text = str(self.staves)
+
+        if self.part_symbol is not None:
+            ElementTree.SubElement(attributes_el, "part-symbol", {"top-staff": str(self.part_symbol[0]), "bottom-staff": str(self.part_symbol[1])}),
 
         amount_to_backup = 0
         for i, voice in enumerate(self.voices):
@@ -2060,7 +2065,6 @@ class Part(MusicXMLComponent, MusicXMLContainer):
 
     def wrap_as_score(self) -> 'Score':
         return Score([self])
-
 
 class PartGroup(MusicXMLComponent, MusicXMLContainer):
     """
